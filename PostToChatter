@@ -1,0 +1,29 @@
+public static void postChatter( List<Order_Item_Approval__c> triggerNew ){
+        System.debug( 'In postChatter --> ' );
+        List<ConnectApi.BatchInput> batchInputs = new List<ConnectApi.BatchInput>();
+        try{
+            For( Order_Item_Approval__c eachOrder : triggerNew ){
+                if( eachOrder.Approval_Status__c == 'ONHOLD' && eachOrder.Current_Approver__c != null){
+                    System.debug( 'In If --> ' );
+                    ConnectApi.FeedType feedType = ConnectApi.FeedType.UserProfile;
+                    ConnectApi.MentionSegmentInput mentionSegmentInput = new ConnectApi.MentionSegmentInput();
+                    mentionSegmentInput.id = eachOrder.Current_Approver__c; //Mention user 
+                    ConnectApi.MessageBodyInput messageInput = new ConnectApi.MessageBodyInput();
+                    messageInput.messageSegments = new List<ConnectApi.MessageSegmentInput>();
+                
+                    // add the text segment
+                    ConnectApi.TextSegmentInput textSegment = new ConnectApi.TextSegmentInput();
+                    textSegment.text = ' Sample Order '+eachOrder.Order_Number__c+' for '+eachOrder.Account_Name__c+' requires your Approval .';
+                    messageInput.messageSegments.add(mentionSegmentInput);
+                    messageInput.messageSegments.add(textSegment);
+                
+                    ConnectApi.FeedItemInput feedItemInput = new ConnectApi.FeedItemInput();
+                    feedItemInput.body = messageInput;
+                    feedItemInput.subjectId = eachOrder.id;
+                
+                    // post it
+                    ConnectApi.ChatterFeeds.postFeedElement(Network.getNetworkId(), feedItemInput);                    
+                }/* End of if */
+            }/* End of for */
+        }catch( exception ex ){ System.debug( 'Message --> '+ex.getMessage()+' Stack_trace --> '+ex.getStackTraceString() ); }    
+    }/* End of method */
